@@ -1,4 +1,4 @@
-j
+
 # HHliner - a helper tool for high sensitive HMM-HMM search against Pfam using HHsearch and JackHMMER
 
 [![license](https://img.shields.io/github/license/mashape/apistatus.svg)](/LICENSE)
@@ -64,10 +64,10 @@ work/<input file name>/<group>/<protein>/    -- The directory includes all the o
 ```
 
 ## information
-Prototype of this package was used in the studies below.
+Prototype of this package was used in environmental viral studies below.
 ```
 - Nishimura, Y. et al. Environmental viral genomes shed new light on virus–host interactions in the ocean.
-mSphere, 2, e00359-16, doi:10.1128/mSphere.00359-16 (2017)
+  mSphere, 2, e00359-16, doi:10.1128/mSphere.00359-16 (2017)
 - Yoshida, T. et al. Locality and diel cycling of viral production revealed by a 24 h time course cross-omics analysis in a coastal region of Japan.
-ISME J., doi:10.1038/s41396-018-0052-x (2018)
+  ISME J., doi:10.1038/s41396-018-0052-x (2018)
 ```
