@@ -54,9 +54,10 @@ $ $PROGNAME [options]
         --incdomE [num]   (default: 0.001) inclusion threshold for domains
 
   (hhsearch related)
-        --evalue  [num]   (default: 1) E-value threshold for inclusion of result table
-        --pvalue  [num]   (default: 1e-5) P-value threshold for inclusion of result table
-        --prob    [num]   (default: 85) %-Probability threshold for inclusion of result table
+    -n, --nreport [int]   (default: 3)  number of hits for each query shown in a result table
+        --evalue  [num]   (default: 10) E-value threshold for inclusion in a result table
+        --pvalue  [num]   (default: 1)  P-value threshold for inclusion in a result table
+        --prob    [num]   (default: 30) %-Probability threshold for inclusion in a result table
 
   (use GNU parallel)
         --ncpus   [int]   -- number of simaltaneous jobs
@@ -65,9 +66,10 @@ $ $PROGNAME [options]
         --queue   [JP1]   -- queue to calculate
 
 [32m[output files][0m
-info/stats.txt                               -- number of proteins in each file
-result/<input file name>/<group>/besthit.tsv -- table of HHserach besthit. Group is what is specified by the "belongTo:" tags or "ungrouped" if not provided (see description of the -i/--in option).
-work/<input file name>/<group>/<protein>/    -- The directory includes all the output files of jackhmmer and hhsearch
+result/<input file name>/<group>/besthit.tsv   -- table of HHserach besthit. Group is what is specified by the "belongTo:" tags or "ungrouped" if not provided (see description of the -i/--in option).
+result/<input file name>/<group>/top<n>hit.tsv -- table of HHserach top<n>hit. <n> can be altered by -n/--nreport option (default: 3).
+work/<input file name>/<group>/<protein>/      -- The directory includes all the output files of jackhmmer and hhsearch
+info/stats.txt                                 -- number of proteins in each file
 EOF
 # }}} usage
 
@@ -164,6 +166,14 @@ do
 			prob="$2"
 			shift 2
 			;;
+		'-n'|'--nreport' )
+			if [[ -z "$2" ]] || [[ "$2" =~ ^-+ ]] ; then
+				echo "$Errmsg option requires an argument -- $1" 1>&2
+				exit 1
+			fi
+			nreport="$2"
+			shift 2
+			;;
 		'--queue' )
 			if [[ -z "$2" ]] || [[ "$2" =~ ^-+ ]] ; then
 				echo "$Errmsg option requires an argument -- $1" 1>&2
@@ -212,6 +222,9 @@ done
 if [ $numWord -eq 1 ] ; then ## case when no argument is given.
 	echo "$usage"
 	exit 1
+elif [ -e "$dir" ] ; then
+	echo "$Errmsg output directory already exists." 1>&2
+	exit 1
 elif [ -n "$params" ] ; then
 	echo "$Errmsg some argument detected. Need no argument." 1>&2
 	exit 1
@@ -236,8 +249,8 @@ elif [ -z "$hhdb" ] ; then
 elif [ ! -f "${hhdb}_hhm.ffdata" ] ; then
 	echo "$Errmsg ${hhdb}_hhm.ffdata should exist" 1>&2
 	exit 1
-elif [ -e "$dir" ] ; then
-	echo "$Errmsg output directory already exists." 1>&2
+elif [ "$nreport" -lt 1 ] ; then
+	echo "$Errmsg $nreport should be equal to or more than 1." 1>&2
 	exit 1
 elif ! [ -f "$in" ] ; then ## input file is not detected --> validate comma separated multiple files
 	for f in $(echo $in | tr "," "\n") ; do
@@ -275,12 +288,16 @@ fi
 ### param for split length for fast up
 iter="${iter:-5}"
 
-### tblastx params
+### thresholds (jackhmmer)
 incE="${incE:-0.001}"
 incdomE="${incdomE:-0.001}"
-evalue="${evalue:-1}"
-pvalue="${pvalue:-1e-5}"
-prob="${prob:-85}"
+
+### thresholds (hhsearch)
+nreport="${nreport:-3}"
+## [ref: hhsuite-userguide.pdf] Roughly speaking, one should give a hit serious consideration (i.e., check the other points in this list) whenever (1) the hit has > 50% probability, or (2) it has > 30% probability and is among the top three hits.
+evalue="${evalue:-10}"
+pvalue="${pvalue:-1}"
+prob="${prob:-30}"
 
 ### computation params
 queue="${queue}"
@@ -334,7 +351,7 @@ echo "$incmdlog" |tee -a $logdir/$jobname.log
 trap 'after_run 1' 1 2 3 9 15
 
 ## run
-rake -f $rakefile dir="$dir" in="$in" jackdb="$jackdb" hhdb="$hhdb" iter="$iter" incE="$incE" incdomE="$incdomE" \
+rake -f $rakefile dir="$dir" in="$in" jackdb="$jackdb" hhdb="$hhdb" iter="$iter" incE="$incE" incdomE="$incdomE" nreport="$nreport" \
 	evalue="$evalue" pvalue="$pvalue" prob="$prob" queue="$queue" ncpus="$ncpus" wtime="$wtime" 2>&1 |tee -a $logdir/$jobname.log
 st=$(( ${PIPESTATUS[0]} + ${PIPESTATUS[1]} ))
 after_run $st

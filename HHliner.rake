@@ -94,9 +94,11 @@ task :default do
 	IncE     = ENV["incE"].to_f    # default: 0.001
 	IncdomE  = ENV["incdomE"].to_f # default: 0.001
 	# E        = ENV["e"].to_f       # default: 0.001, for hhsearch inclusion threshold
-	Evalue   = ENV["evalue"].to_f  # default: 1
-	Pvalue   = ENV["pvalue"].to_f  # default: 1e-5
-	Prob     = ENV["prov"].to_f    # default: 85
+
+	Nreport  = ENV["nreport"].to_i # default: 3
+	Evalue   = ENV["evalue"].to_f  # default: 10
+	Pvalue   = ENV["pvalue"].to_f  # default: 1
+	Prob     = ENV["prov"].to_f    # default: 30
 
 	Nthreads = "1".to_i              
 	Mem      = Nthreads * 12
@@ -278,7 +280,7 @@ desc "01-6.parse_result"
 task "01-6.parse_result", ["step"] do |t, args|
 	PrintStatus.call(args.step, NumStep, "START", t)
 	header   = %w|protein query_len query_num_iter query_num_seq query_num_seq_used template_acc template_name template_desc
-	probability e-value p-value score cols query_pos template_pos template_len|
+	probability e-value p-value score cols query_pos template_pos template_len rank|
 
 	### parse Pfam desc
 	acc2info = {}
@@ -305,7 +307,8 @@ task "01-6.parse_result", ["step"] do |t, args|
 			odir  = "#{Odir}/result/#{fname}/#{group}"; mkdir_p odir
 
 			### store output for each group
-			pid2out = {}
+			pid2best = {}
+			pid2topN = {}
 
 			Group2pids[group].each{ |pid|
 				### parse iter/q_num_1 
@@ -315,7 +318,10 @@ task "01-6.parse_result", ["step"] do |t, args|
 
 				### store [pid, len, iter]
 				len  = pinfo[pid]
-				a    = [pid, len, iter, q_num_1]
+				out  = []
+				Nreport.times do
+					out << [pid, len, iter, q_num_1]
+				end
 
 				fin  = "#{dgroup}/#{pid}/hhsearch.hhr"
 				if File.exist?(fin)
@@ -329,8 +335,10 @@ task "01-6.parse_result", ["step"] do |t, args|
 						#  No Hit                             Prob E-value P-value  Score    SS Cols Query HMM  Template HMM
 						#   1 PF04908.12 ; SH3BGR ; SH3-bind  99.3 5.9E-16 3.6E-20   88.3   0.0   75    1-75      2-91  (98)
 						#   1 PF02463.18 ; SMC_N ; RecF/RecN  99.3 2.4E-16 1.4E-20  185.7   0.0  161  355-524  1100-1270(1271)
-						if l =~ /^\s+1\s+(\S+)/ # top hit
-							acc = $1
+						if l =~ /^\s+(\d+)\s+(\S+)/ # top 3 hit
+							rank, acc  = $1.to_i, $2
+							next if rank > Nreport
+
 							name, desc = acc2info[acc]
 							scores = l[34..-1].strip.split(/\s+/)
 							prob, e_val, p_val, score, ss = scores[0..4].map(&:to_f)
@@ -342,21 +350,28 @@ task "01-6.parse_result", ["step"] do |t, args|
 								t_len        = t_len[0..-2]     ## 1271) --> 1271
 							end
 
-							if prob > Prob and e_val < Evalue or p_val < Pvalue ## significant hit
-								a += [q_num_2, acc, name, desc, prob, e_val, p_val, score, cols, q_pos, t_pos, t_len]
+							if prob > Prob and e_val < Evalue and p_val < Pvalue ## significant topN hit
+								out[rank-1] += [q_num_2, acc, name, desc, prob, e_val, p_val, score, cols, q_pos, t_pos, t_len, rank]
 							end
 						end
 					}
 				end
-				a += ["-"]*12 if a.size == 4
-				pid2out[pid] = a
+				out = out.map{ |a| a.size == 4 ? a += ["-"]*13 : a }
+				pid2best[pid] = out[0]*"\t"
+				pid2topN[pid] = out.map.with_index{ |a, idx| ## besthit --> always include (even if "-"), others --> include if significant
+					idx == 0 ? a*"\t" : (a[4] == "-" ? nil : a*"\t")
+				}.compact
 			}
 
 			### make output
 			odir = "#{Odir}/result/#{fname}/#{group}"
 			open("#{odir}/besthit.tsv", "w"){ |fout|
 				fout.puts header*"\t"
-				pid2out.each{ |pid, out| fout.puts out*"\t" }
+				pid2best.each{ |pid, l| fout.puts l }
+			}
+			open("#{odir}/top#{Nreport}hit.tsv", "w"){ |fout|
+				fout.puts header*"\t"
+				pid2topN.each{ |pid, out| fout.puts out }
 			}
 		}
 	}
