@@ -124,7 +124,8 @@ task "01-1.prep_query_files", ["step"] do |t, args|
 	qlist    = []
 	fnames   = {}
 	Fnames   = []
-	Fname2pids = {}
+	Fname2pids = Hash.new{ |h, i| h[i] = [] }
+	Group2pids = Hash.new{ |h, i| h[i] = [] }
 
 	### detect whether input is fasta or list
 	flag = case fins.size
@@ -162,7 +163,11 @@ task "01-1.prep_query_files", ["step"] do |t, args|
 			pid2len[pid] = len
 
 			### store sequnece
-			group2out[group][pid] = [">"+pid, seq.join.gsub(/\s+/, "")]
+			group2out[group][pid] = [">"+pid, seq.join.gsub(/[^A-Za-z]/, "")] ### The stop codon '*' must be removed. If '*' is included, reformat.pl raise error.
+
+			### store proteins in given order
+			Fname2pids[fname] << [group, pid]
+			Group2pids[group] << pid
 		}
 
 		num_group         = group2out.keys.size
@@ -197,9 +202,6 @@ task "01-1.prep_query_files", ["step"] do |t, args|
 				}
 			}
 		}
-
-		### store proteins in given order
-		Fname2pids[fname] = pid2len.keys
 	}
 
 	### write stats
@@ -220,14 +222,12 @@ task "01-3.jackhmmer", ["step"] do |t, args|
 	outs     = []
 
 	Fnames.each{ |fname|
-		Dir["#{Dir1}/#{fname}/*"].sort.each{ |dgroup|
-			Fname2pids[fname].each{ |pid|
-				faa  = "#{dgroup}/#{pid}/query.faa"
-				pref = File.dirname(faa) + "/jack" ## pref = #{dir}/jack
-				cmd  ="jackhmmer --cpu 1 -o #{pref}.out --tblout #{pref}.tblout --chkhmm #{pref} --chkali #{pref} \
-				--incE #{IncE} --incdomE #{IncdomE} --notextw --noali #{faa} #{Jackdb}".gsub(/\s+/, " ")
-				outs << cmd
-			}
+		Fname2pids[fname].each{ |group, pid|
+			faa  = "#{Dir1}/#{fname}/#{group}/#{pid}/query.faa"
+			pref = File.dirname(faa) + "/jack" ## pref = #{dir}/jack
+			cmd  = "jackhmmer --cpu 1 -o #{pref}.out --tblout #{pref}.tblout --chkhmm #{pref} --chkali #{pref} \
+			--incE #{IncE} --incdomE #{IncdomE} --notextw --noali #{faa} #{Jackdb}".gsub(/\s+/, " ")
+			outs << cmd
 		}
 	}
 
@@ -241,17 +241,15 @@ task "01-4.reformat.pl", ["step"] do |t, args|
 	outs     = []
 
 	Fnames.each{ |fname|
-		Dir["#{Dir1}/#{fname}/*"].sort.each{ |dgroup|
-			Fname2pids[fname].each{ |pid|
-				fins = Dir["#{dgroup}/#{pid}/jack-*.sto"]
-				next if fins.size == 0
+		Fname2pids[fname].each{ |group, pid|
+			fins = Dir["#{Dir1}/#{fname}/#{group}/#{pid}/jack-*.sto"]
+			next if fins.size == 0
 
-				fin  = fins.sort_by{ |fin| fin[/-(\d+)\.sto$/, 1].to_i * -1 }[0] ## select .sto of last iteration
-				fout = fin.sub(/\.sto$/, ".a2m")
-				log  = fin.sub(/\.sto$/, ".sto.reformat.log")
+			fin  = fins.sort_by{ |fin| fin[/-(\d+)\.sto$/, 1].to_i * -1 }[0] ## select .sto of last iteration
+			fout = fin.sub(/\.sto$/, ".a2m")
+			log  = fin.sub(/\.sto$/, ".sto.reformat.log")
 
-				outs << "reformat.pl #{fin} #{fout} >#{log} 2>&1"
-			}
+			outs << "reformat.pl #{fin} #{fout} >#{log} 2>&1"
 		}
 	}
 
@@ -265,13 +263,11 @@ task "01-5.hhsearch", ["step"] do |t, args|
 	outs     = []
 
 	Fnames.each{ |fname|
-		Dir["#{Dir1}/#{fname}/*"].sort.each{ |dgroup|
-			Fname2pids[fname].each{ |pid|
-				fin = Dir["#{dgroup}/#{pid}/jack-*.a2m"][0]
-				next unless fin
-				pref = File.dirname(fin) + "/hhsearch" ## pref = #{dir}/jack
-				outs << "hhsearch -d #{Hhdb} -i #{fin} -o #{pref}.hhr >#{pref}.log 2>&1"
-			}
+		Fname2pids[fname].each{ |group, pid|
+			fin = Dir["#{Dir1}/#{fname}/#{group}/#{pid}/jack-*.a2m"][0]
+			next unless fin
+			pref = File.dirname(fin) + "/hhsearch" ## pref = #{dir}/jack
+			outs << "hhsearch -d #{Hhdb} -i #{fin} -o #{pref}.hhr >#{pref}.log 2>&1"
 		}
 	}
 
@@ -311,7 +307,7 @@ task "01-6.parse_result", ["step"] do |t, args|
 			### store output for each group
 			pid2out = {}
 
-			Fname2pids[fname].each{ |pid|
+			Group2pids[group].each{ |pid|
 				### parse iter/q_num_1 
 				a2m     = Dir["#{dgroup}/#{pid}/jack-*.a2m"][0]
 				iter    = File.basename(a2m)[/jack-(\d+)\.a2m/, 1] ## number of iteration for build queryHMM

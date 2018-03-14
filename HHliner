@@ -11,7 +11,7 @@ PROGNAME=$(basename $0)
 VERSION="0.1.0"
 Errmsg="[1;31m[error][0m"
 Sccmsg="[1;32m[success][0m"
-Modidate="2018-03-13"
+Modidate="2018-03-14"
 incmd="$0 $*"
 numWord=$(echo $incmd |wc -w)
 
@@ -208,7 +208,7 @@ done
 # }}} parse command line
 
 
-# {{{ validate input command
+# {{{ validate input command/arguments
 if [ $numWord -eq 1 ] ; then ## case when no argument is given.
 	echo "$usage"
 	exit 1
@@ -224,8 +224,17 @@ elif [ -z "$dir" ] ; then
 elif [ -z "$jackdb" ] ; then
 	echo "$Errmsg protein fasta file for jackhmmer database should be specified ('-J' or '--jackdb')" 1>&2
 	exit 1
+elif [ ! -f "$jackdb" ] ; then
+	echo "$Errmsg protein fasta file for jackhmmer database should exist" 1>&2
+	exit 1
 elif [ -z "$hhdb" ] ; then
 	echo "$Errmsg database file for hhsearch should be specified ('-H' or '--hhdb')" 1>&2
+	exit 1
+# elif [ ! -f "${hhdb}_hhm_db" ] ; then
+# 	echo "$Errmsg ${hhdb}_hhm.db should exist" 1>&2
+# 	exit 1
+elif [ ! -f "${hhdb}_hhm.ffdata" ] ; then
+	echo "$Errmsg ${hhdb}_hhm.ffdata should exist" 1>&2
 	exit 1
 elif [ -e "$dir" ] ; then
 	echo "$Errmsg output directory already exists." 1>&2
