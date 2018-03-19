@@ -98,7 +98,7 @@ task :default do
 	Nreport  = ENV["nreport"].to_i # default: 3
 	Evalue   = ENV["evalue"].to_f  # default: 10
 	Pvalue   = ENV["pvalue"].to_f  # default: 1
-	Prob     = ENV["prov"].to_f    # default: 30
+	Prob     = ENV["prob"].to_f    # default: 30
 
 	Nthreads = "1".to_i              
 	Mem      = Nthreads * 12
@@ -134,7 +134,7 @@ task "01-1.prep_query_files", ["step"] do |t, args|
 				 when 1 
 					ents = IO.read(fins[0]).split(/^>/)
 					flag = ents.size > 1 ? "fasta" : "list" ## if input file is multiple, regard as fasta file
-				 else "fasta"       ## fin is fasta if multiple file is given.
+				 else "fasta" ## fin is fasta if multiple file is given.
 				 end
 
 	### fetch fasta files from list
@@ -215,7 +215,8 @@ end
 task "01-2.parse_hhdb_ent", ["step"] do |t, args|
 	PrintStatus.call(args.step, NumStep, "START", t)
 	HhdbList = "#{Dir2}/hhdb.list"
-	sh %|grep "^NAME" #{HhdbData} >#{HhdbList}|
+	## -a option: treat binary file as text file (since `file pfam_hhm.ffdata' is data)
+	sh %|grep -a "^NAME" #{HhdbData} >#{HhdbList}|
 end
 task "01-3.jackhmmer", ["step"] do |t, args|
 	PrintStatus.call(args.step, NumStep, "START", t)
@@ -329,6 +330,8 @@ task "01-6.parse_result", ["step"] do |t, args|
 
 					### parse query_num_seq (after filters such as non-redundancy filter, ...)
 					q_num_2 = ls[2][/(\d+) out of \d+/, 1]
+					neff    = ls[3][/^Neff\s+(\d+)/, 1]
+					# out = out.map{ |a| a += [q_num_2, neff] }
 
 					### parse best hit
 					ls.each{ |l|
@@ -350,7 +353,7 @@ task "01-6.parse_result", ["step"] do |t, args|
 								t_len        = t_len[0..-2]     ## 1271) --> 1271
 							end
 
-							if prob > Prob and e_val < Evalue and p_val < Pvalue ## significant topN hit
+							if (prob > Prob) and (e_val < Evalue) and (p_val < Pvalue) ## significant topN hit
 								out[rank-1] += [q_num_2, acc, name, desc, prob, e_val, p_val, score, cols, q_pos, t_pos, t_len, rank]
 							end
 						end

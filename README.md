@@ -64,7 +64,7 @@ work/<input file name>/<group>/<protein>/    -- The directory includes all the o
 ```
 
 ## information
-Prototype of this package was used in environmental viral studies below.
+Prototype of this package was used in environmental virus studies below.
 ```
 - Nishimura, Y. et al. Environmental viral genomes shed new light on virus–host interactions in the ocean.
   mSphere, 2, e00359-16, doi:10.1128/mSphere.00359-16 (2017)
