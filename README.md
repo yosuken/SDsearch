@@ -11,7 +11,7 @@
 
 ## usage 
 ```
-### HHliner ver 0.1.0 (2018-03-13) ###
+### HHliner ver 0.1.0 (2018-03-19) ###
 
 [description]
 HHliner - a helper tool for high sensitive HMM-HMM search against Pfam using HHsearch and JackHMMER
@@ -47,9 +47,10 @@ $ HHliner [options]
         --incdomE [num]   (default: 0.001) inclusion threshold for domains
 
   (hhsearch related)
-        --evalue  [num]   (default: 1) E-value threshold for inclusion of result table
-        --pvalue  [num]   (default: 1e-5) P-value threshold for inclusion of result table
-        --prob    [num]   (default: 85) %-Probability threshold for inclusion of result table
+    -n, --nreport [int]   (default: 3)  number of hits for each query shown in a result table
+        --evalue  [num]   (default: 10) E-value threshold for inclusion in a result table
+        --pvalue  [num]   (default: 1)  P-value threshold for inclusion in a result table
+        --prob    [num]   (default: 30) %-Probability threshold for inclusion in a result table
 
   (use GNU parallel)
         --ncpus   [int]   -- number of simaltaneous jobs
@@ -58,10 +59,33 @@ $ HHliner [options]
         --queue   [JP1]   -- queue to calculate
 
 [output files]
-info/stats.txt                               -- number of proteins in each file
-result/<input file name>/<group>/besthit.tsv -- table of HHserach besthit. Group is what is specified by the "belongTo:" tags or "ungrouped" if not provided (see description of the -i/--in option).
-work/<input file name>/<group>/<protein>/    -- The directory includes all the output files of jackhmmer and hhsearch
+result/<input file name>/<group>/besthit.tsv   -- table of HHserach besthit. See README.md for column description. Group is what is specified by the "belongTo:" tags or "ungrouped" if not provided (see description of the -i/--in option).
+result/<input file name>/<group>/top<n>hit.tsv -- table of HHserach top<n>hit. <n> can be altered by -n/--nreport option (default: 3).
+work/<input file name>/<group>/<protein>/      -- The directory includes all the output files of jackhmmer and hhsearch
+info/stats.txt                                 -- number of proteins in each file
 ```
+
+## columns of result table (besthit.tsv / top\<n\>hit.tsv)
+```
+1  protein            - query protein name
+2  query_len          - query protein length (same as length of query HMM)
+3  query_num_iter     - the number of iteration by jackhmmer
+4  query_num_seq      - the number of sequences included in query HMM
+5  query_num_seq_used - the number of sequences included in query HMM that passed through hhsearch prefilter.
+6  template_acc       - template Pfam accession
+7  template_name      - template Pfam name
+8  template_desc      - template Pfam description
+9  probability        - reported probability
+10 e-value            - reported e-value
+11 p-value            - reported p-value
+12 score              - reported score
+13 cols               - length of the HMM-HMM alignment
+14 query_pos          - position of query HMM included in the HMM-HMM alignment
+15 template_pos       - position of template HMM included in the HMM-HMM alignment
+16 template_len       - length of template HMM
+17 rank               - rank of HMM-HMM alignment repored by hhsearch
+```
+Columns 5 to 17 are parsed from hhsearch output (.hhr file).
 
 ## information
 Prototype of this package was used in environmental virus studies below.

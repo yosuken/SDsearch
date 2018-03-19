@@ -66,7 +66,7 @@ $ $PROGNAME [options]
         --queue   [JP1]   -- queue to calculate
 
 [32m[output files][0m
-result/<input file name>/<group>/besthit.tsv   -- table of HHserach besthit. Group is what is specified by the "belongTo:" tags or "ungrouped" if not provided (see description of the -i/--in option).
+result/<input file name>/<group>/besthit.tsv   -- table of HHserach besthit. See README.md for column description. Group is what is specified by the "belongTo:" tags or "ungrouped" if not provided (see description of the -i/--in option).
 result/<input file name>/<group>/top<n>hit.tsv -- table of HHserach top<n>hit. <n> can be altered by -n/--nreport option (default: 3).
 work/<input file name>/<group>/<protein>/      -- The directory includes all the output files of jackhmmer and hhsearch
 info/stats.txt                                 -- number of proteins in each file
