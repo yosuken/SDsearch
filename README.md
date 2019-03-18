@@ -1,5 +1,5 @@
 
-# HHliner - a helper tool for high sensitive HMM-HMM search against Pfam using HHsearch and JackHMMER
+# pipeline_for_high_sensitive_domain_search - a helper tool for high sensitive HMM-HMM search against Pfam using HHsearch and JackHMMER
 
 [![license](https://img.shields.io/github/license/mashape/apistatus.svg)](/LICENSE)
 [![size](https://img.shields.io/github/size/webcaetano/craft/build/phaser-craft.min.js.svg)]()
@@ -11,17 +11,17 @@
 
 ## usage 
 ```
-### HHliner ver 0.1.0 (2018-03-19) ###
+### pipeline_for_high_sensitive_domain_search ver 0.1.0 (2018-03-19) ###
 
 [description]
-HHliner - a helper tool for high sensitive HMM-HMM search against Pfam using HHsearch and JackHMMER
+pipeline_for_high_sensitive_domain_search - a helper tool for high sensitive HMM-HMM search against Pfam using HHsearch and JackHMMER
 
 [reference]
 HHsearch  - doi:10.1093/bioinformatics/bti125
 JackHMMER - doi:10.1186/1471-2105-11-431
 
 [usage]
-$ HHliner [options]
+$ pipeline_for_high_sensitive_domain_search [options]
 
 [dependencies]
     - jackhmmer             -- included in the HMMER3 package;

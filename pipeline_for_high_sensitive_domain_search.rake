@@ -1,5 +1,5 @@
 #
-#  HHliner - a helper tool for sensitive HMM-HMM search using HHserach and JackHMMER
+#  pipeline_for_high_sensitive_domain_search - a helper tool for sensitive HMM-HMM search using HHserach and JackHMMER
 #
 #    Copyright: 2017 (C) Yosuke Nishimura (yosuke@kuicr.kyoto-u.ac.jp)
 #    License: MIT license

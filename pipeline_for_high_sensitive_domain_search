@@ -1,6 +1,6 @@
 #!/bin/bash
 ###
-###  HHliner - a helper tool for high sensitive HMM-HMM search against Pfam using HHsearch and JackHMMER
+###  pipeline_for_high_sensitive_domain_search - a helper tool for high sensitive HMM-HMM search against Pfam using HHsearch and JackHMMER
 ###
 ###    Copyright: 2018 (C) Yosuke Nishimura (yosuke@kuicr.kyoto-u.ac.jp)
 ###    License: MIT license
