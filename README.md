@@ -88,6 +88,7 @@ info/stats.txt                                 -- number of proteins in each fil
 Columns 5 to 17 are parsed from hhsearch output (.hhr file).
 
 ## information
+Old name: HHliner.
 Prototype of this package was used in environmental virus studies below.
 ```
 - Nishimura, Y. et al. Environmental viral genomes shed new light on virus–host interactions in the ocean.
