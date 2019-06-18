@@ -8,7 +8,7 @@
 ###
 
 PROGNAME=$(basename $0)
-VERSION="0.1.1"
+VERSION="0.1.2"
 Errmsg="[1;31m[error][0m"
 Sccmsg="[1;32m[success][0m"
 Modidate="2019-06-19"
