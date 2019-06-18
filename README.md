@@ -7,7 +7,7 @@
 ## requirements
 * jackhmmer (HMMER3)
 * hhsearch, reformat.pl (HHsuite3)
-* Ruby (ver >=2.0)
+* Ruby (ver >=2.1)
 
 ## usage 
 ```
@@ -29,7 +29,7 @@ $ pipeline_for_high_sensitive_domain_search [options]
     - hhsearch, reformat.pl -- included in the HHsuite package;
                                HHsuite3 - https://github.com/soedinglab/hh-suite
                                HHsuite2 - http://wwwuser.gwdg.de/~compbiol/data/hhsuite/releases/all/
-    - ruby (ver >=2.0)
+    - ruby (ver >=2.1)
 
 [options]
   (general)
