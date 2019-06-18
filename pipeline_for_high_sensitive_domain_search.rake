@@ -2,8 +2,6 @@
 #  pipeline_for_high_sensitive_domain_search - a helper tool for sensitive HMM-HMM search using HHserach and JackHMMER
 #
 #    Copyright: 2017 (C) Yosuke Nishimura (yosuke@kuicr.kyoto-u.ac.jp)
-#    License: MIT license
-#    Initial version: 2017-03-12
 #
 
 
@@ -335,6 +333,11 @@ task "01-6.parse_result", ["step"] do |t, args|
 
 					### parse best hit
 					ls.each{ |l|
+            ### invalid byte sequence check (require ruby version >=2.1)
+            _l = l.scrub("!")
+            $stderr.puts "The line inlucde invalid byte: #{l}" if _l != l
+            l = _l
+
 						#  No Hit                             Prob E-value P-value  Score    SS Cols Query HMM  Template HMM
 						#   1 PF04908.12 ; SH3BGR ; SH3-bind  99.3 5.9E-16 3.6E-20   88.3   0.0   75    1-75      2-91  (98)
 						#   1 PF02463.18 ; SMC_N ; RecF/RecN  99.3 2.4E-16 1.4E-20  185.7   0.0  161  355-524  1100-1270(1271)

@@ -8,10 +8,10 @@
 ###
 
 PROGNAME=$(basename $0)
-VERSION="0.1.0"
+VERSION="0.1.1"
 Errmsg="[1;31m[error][0m"
 Sccmsg="[1;32m[success][0m"
-Modidate="2018-03-19"
+Modidate="2019-06-19"
 incmd="$0 $*"
 numWord=$(echo $incmd |wc -w)
 
@@ -36,7 +36,7 @@ $ $PROGNAME [options]
     - hhsearch, reformat.pl -- included in the HHsuite package;
                                HHsuite3 - https://github.com/soedinglab/hh-suite
                                HHsuite2 - http://wwwuser.gwdg.de/~compbiol/data/hhsuite/releases/all/
-    - ruby (ver >=2.0) 
+    - ruby (ver >=2.1) 
 
 [32m[options][0m
   (general)
@@ -270,9 +270,9 @@ command -v hhsearch    >/dev/null 2>&1 || { echo >&2 "$Errmsg hhsearch (in HHsui
 command -v reformat.pl >/dev/null 2>&1 || { echo >&2 "$Errmsg reformat.pl (in HHsuite package) is required but not available.  Aborting."; exit 1; }
 
 ### check ruby version
-ST=`ruby -e 'print RUBY_VERSION.to_f >= 2.0 ? 0 : 1'`
+ST=`ruby -e 'print RUBY_VERSION.to_f >= 2.1 ? 0 : 1'`
 if [ $ST -ne 0 ]; then 
-	echo >&2 "$Errmsg ruby (version >=2.0) is required.  Aborting."; exit 1;
+	echo >&2 "$Errmsg ruby (version >=2.1) is required.  Aborting."; exit 1;
 fi
 
 ### check availablity of GNU parallel
