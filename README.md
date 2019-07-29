@@ -11,7 +11,7 @@
 
 ## usage 
 ```
-### pipeline_for_high_sensitive_domain_search ver 0.1.0 (2018-03-19) ###
+### pipeline_for_high_sensitive_domain_search ver 0.1.3 (2019-07-29) ###
 
 [description]
 pipeline_for_high_sensitive_domain_search - a helper tool for high sensitive HMM-HMM search against Pfam using HHsearch and JackHMMER
@@ -85,7 +85,7 @@ info/stats.txt                                 -- number of proteins in each fil
 16 template_len       - length of template HMM
 17 rank               - rank of HMM-HMM alignment repored by hhsearch
 ```
-Columns 5 to 17 are parsed from hhsearch output (.hhr file).
+Columns 5 to 17 are derived from hhsearch output (.hhr file).
 
 ## information
 Old name: HHliner.

@@ -4,14 +4,13 @@
 ###
 ###    Copyright: 2018 (C) Yosuke Nishimura (yosuke@kuicr.kyoto-u.ac.jp)
 ###    License: MIT license
-###    Initial version: 2018-03-12
 ###
 
 PROGNAME=$(basename $0)
-VERSION="0.1.2"
+VERSION="0.1.3"
 Errmsg="[1;31m[error][0m"
 Sccmsg="[1;32m[success][0m"
-Modidate="2019-06-19"
+Modidate="2019-07-29"
 incmd="$0 $*"
 numWord=$(echo $incmd |wc -w)
 
