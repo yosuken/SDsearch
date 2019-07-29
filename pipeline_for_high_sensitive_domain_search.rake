@@ -226,7 +226,7 @@ task "01-3.jackhmmer", ["step"] do |t, args|
 		Fname2pids[fname].each{ |group, pid|
 			faa  = "#{Dir1}/#{fname}/#{group}/#{pid}/query.faa"
 			pref = File.dirname(faa) + "/jack" ## pref = #{dir}/jack
-			cmd  = "jackhmmer --cpu 1 -o #{pref}.out --tblout #{pref}.tblout --chkhmm #{pref} --chkali #{pref} \
+			cmd  = "jackhmmer --cpu 1 -N #{Iter} -o #{pref}.out --tblout #{pref}.tblout --chkhmm #{pref} --chkali #{pref} \
 			--incE #{IncE} --incdomE #{IncdomE} --notextw --noali #{faa} #{Jackdb}".gsub(/\s+/, " ")
 			outs << cmd
 		}
