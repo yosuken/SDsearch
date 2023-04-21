@@ -11,3 +11,17 @@
 *.swp
 *~
 .nfs*
+
+### "old" directory
+/old
+
+### my.xxx setting file
+/my.*
+### pbslog
+/pbslog
+### test output directory
+/test*
+/for_test/*.sh
+/for_test/test*
+/for_test/*/test*
+

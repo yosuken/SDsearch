@@ -1,8 +1,3 @@
-#
-#  pipeline_for_high_sensitive_domain_search - a helper tool for sensitive HMM-HMM search using HHserach and JackHMMER
-#
-#    Copyright: 2017 (C) Yosuke Nishimura (yosuke@kuicr.kyoto-u.ac.jp)
-#
 
 
 # {{{ procedures
@@ -14,15 +9,14 @@ WriteBatch  = lambda do |outs, jdir, t|
 	}
 end
 
-RunBatch    = lambda do |jdir, queue, nthreads, mem, wtime, ncpus|
-	# [TODO] queue validation
+RunBatch    = lambda do |jdir, queue, nthreads, mem, wtime, ncpus, tdir|
 	Dir["#{jdir}/*"].sort_by{ |fin| fin.split(".")[-1].to_i }.each{ |fin|
 		if queue != ""
 			raise("`--queue #{queue}': invalid queue") unless %w|JP1 JP4 JP10 cdb|.include?(queue)
 			sh "qsubarraywww -q #{queue} -l ncpus=#{nthreads} -l mem=#{mem}gb -l walltime=#{wtime} #{fin}"
 		elsif ncpus != ""
 			raise("`--ncpus #{ncpus}': not an integer") if ncpus !~ /^\d+$/
-			sh "parallel --jobs #{ncpus} <#{fin}"
+			sh "parallel --tmpdir #{tdir} --jobs #{ncpus} <#{fin}" ### use tmpdir for temporary starge
 		else
 			sh "sh #{fin}"
 		end
@@ -54,6 +48,8 @@ CheckVersion = lambda do |commands|
 						%{LANG=C R --quiet --no-save --no-restore -e "packageVersion('phangorn')" 2>&1}
 					when "hhsearch"
 						%{hhsearch 2>&1 |grep "^HHsearch"}
+					when "hhblits"
+						%{hhblits 2>&1 |grep "^HHblits"}
 					when "jackhmmer"
 						%{jackhmmer -h 2>&1 |head -2}
 					when "reformat.pl"
@@ -74,19 +70,26 @@ end
 
 # {{{ default (run all tasks)
 task :default do
-	### check version
-	CheckVersion.call(%w|jackhmmer hhsearch reformat.pl ruby|)
-
-	### tasks
-	tasks = %w|01-1.prep_query_files 01-2.parse_hhdb_ent 01-3.jackhmmer 01-4.reformat.pl 01-5.hhsearch 01-6.parse_result|
-
 	In       = ENV["in"]
 	Odir     = ENV["dir"]
+	Mode     = ENV["mode"]
 	Jackdb   = ENV["jackdb"]
 	Hhdb     = ENV["hhdb"]
 	
 	HhdbData = "#{Hhdb}_hhm.ffdata" # to parse id-acc-def
 	raise("\e[1;31mError:\e[0m #{HhdbData} should exist but not found") unless File.exist?(HhdbData)
+
+	### tasks and check version
+  case Mode
+  when "hhblits"
+    tasks = %w|01-1.prep_query_files 01-2.parse_hhdb_ent 01-6.hhblits 02-1.parse_result|
+    CheckVersion.call(%w|hhblits ruby|)
+  when "hhsearch"
+    tasks = %w|01-1.prep_query_files 01-2.parse_hhdb_ent 01-3.jackhmmer 01-4.reformat.pl 01-5.hhsearch 02-1.parse_result|
+    CheckVersion.call(%w|jackhmmer hhsearch reformat.pl ruby|)
+  end
+
+
 
 	Iter     = ENV["iter"].to_i    # default: 5
 	IncE     = ENV["incE"].to_f    # default: 0.001
@@ -103,6 +106,8 @@ task :default do
 	Qname    = ENV["queue"]||""
 	Wtime    = ENV["wtime"]||"24:00:00"
 	Ncpus    = ENV["ncpus"]||""    
+
+  Tdir     = "#{Odir}/tmp"; mkdir_p Tdir
 
 	NumStep  = tasks.size
 	tasks.each.with_index(1){ |task, idx|
@@ -184,8 +189,9 @@ task "01-1.prep_query_files", ["step"] do |t, args|
 
 			### make split fasta
 			pid2ent.each{ |pid, ent|
-				odir = "#{Dir1}/#{fname}/#{group}/#{pid}"; mkdir_p odir
-				open("#{odir}/query.faa", "w"){ |fout| fout.puts ent }
+        odir = "#{Dir1}/#{fname}/#{group}/#{pid}"; mkdir_p odir unless File.directory?(odir)
+        fout = "#{odir}/query.faa"
+        open(fout, "w"){ |fw| fw.puts ent } unless File.exist?(fout)
 			}
 		}
 
@@ -194,20 +200,20 @@ task "01-1.prep_query_files", ["step"] do |t, args|
 		Fnames << fname
 
 		### write query protein list
-		odir   = "#{Dir2}/query"; mkdir_p odir
-		open("#{odir}/#{fname}.list", "w"){ |fout|
+    odir   = "#{Dir2}/query"; mkdir_p odir unless File.directory?(odir)
+		open("#{odir}/#{fname}.list", "w"){ |fw|
 			group2out.each{ |group, pid2ent|
 				pid2ent.each{ |pid, ent|
-					fout.puts [pid, pid2len[pid], group]*"\t"
+					fw.puts [pid, pid2len[pid], group]*"\t"
 				}
 			}
 		}
 	}
 
 	### write stats
-	open(Fin0, "w"){ |fout|
-		fout.puts %w|in_file #group #grouped_protein #ungrouped_protein|*"\t"
-	 	fout.puts stats
+	open(Fin0, "w"){ |fw|
+		fw.puts %w|in_file #group #grouped_protein #ungrouped_protein|*"\t"
+	 	fw.puts stats
 	}
 end
 task "01-2.parse_hhdb_ent", ["step"] do |t, args|
@@ -218,7 +224,6 @@ task "01-2.parse_hhdb_ent", ["step"] do |t, args|
 end
 task "01-3.jackhmmer", ["step"] do |t, args|
 	PrintStatus.call(args.step, NumStep, "START", t)
-	script   = "#{File.dirname(__FILE__)}/script/#{t.name}.rb"
 	jdir     = "#{Odir}/batch/#{t.name.split(".")[0]}"; mkdir_p jdir
 	outs     = []
 
@@ -228,16 +233,16 @@ task "01-3.jackhmmer", ["step"] do |t, args|
 			pref = File.dirname(faa) + "/jack" ## pref = #{dir}/jack
 			cmd  = "jackhmmer --cpu 1 -N #{Iter} -o #{pref}.out --tblout #{pref}.tblout --chkhmm #{pref} --chkali #{pref} \
 			--incE #{IncE} --incdomE #{IncdomE} --notextw --noali #{faa} #{Jackdb}".gsub(/\s+/, " ")
-			outs << cmd
+
+      outs << cmd unless File.exist?("#{pref}.out")
 		}
 	}
 
 	WriteBatch.call(outs, jdir, t)
-	RunBatch.call(jdir, Qname, Nthreads, Mem, Wtime, Ncpus)
+	RunBatch.call(jdir, Qname, Nthreads, Mem, Wtime, Ncpus, Tdir)
 end
 task "01-4.reformat.pl", ["step"] do |t, args|
 	PrintStatus.call(args.step, NumStep, "START", t)
-	script   = "#{File.dirname(__FILE__)}/script/#{t.name}.rb"
 	jdir     = "#{Odir}/batch/#{t.name.split(".")[0]}"; mkdir_p jdir
 	outs     = []
 
@@ -250,16 +255,15 @@ task "01-4.reformat.pl", ["step"] do |t, args|
 			fout = fin.sub(/\.sto$/, ".a2m")
 			log  = fin.sub(/\.sto$/, ".sto.reformat.log")
 
-			outs << "reformat.pl #{fin} #{fout} >#{log} 2>&1"
+      outs << "reformat.pl #{fin} #{fout} >#{log} 2>&1" unless File.exist?(fout)
 		}
 	}
 
 	WriteBatch.call(outs, jdir, t)
-	RunBatch.call(jdir, Qname, Nthreads, Mem, Wtime, Ncpus)
+	RunBatch.call(jdir, Qname, Nthreads, Mem, Wtime, Ncpus, Tdir)
 end
 task "01-5.hhsearch", ["step"] do |t, args|
 	PrintStatus.call(args.step, NumStep, "START", t)
-	script   = "#{File.dirname(__FILE__)}/script/#{t.name}.rb"
 	jdir     = "#{Odir}/batch/#{t.name.split(".")[0]}"; mkdir_p jdir
 	outs     = []
 
@@ -268,15 +272,35 @@ task "01-5.hhsearch", ["step"] do |t, args|
 			fin = Dir["#{Dir1}/#{fname}/#{group}/#{pid}/jack-*.a2m"][0]
 			next unless fin
 			pref = File.dirname(fin) + "/hhsearch" ## pref = #{dir}/jack
-			outs << "hhsearch -d #{Hhdb} -i #{fin} -o #{pref}.hhr >#{pref}.log 2>&1"
+      outs << "hhsearch -d #{Hhdb} -i #{fin} -o #{pref}.hhr >#{pref}.log 2>&1" unless File.exist?("#{pref}.hhr")
 		}
 	}
 
 	WriteBatch.call(outs, jdir, t)
-	RunBatch.call(jdir, Qname, Nthreads, Mem, Wtime, Ncpus)
+	RunBatch.call(jdir, Qname, Nthreads, Mem, Wtime, Ncpus, Tdir)
 end
-desc "01-6.parse_result"
-task "01-6.parse_result", ["step"] do |t, args|
+task "01-6.hhblits", ["step"] do |t, args|
+	PrintStatus.call(args.step, NumStep, "START", t)
+	jdir     = "#{Odir}/batch/#{t.name.split(".")[0]}"; mkdir_p jdir
+	outs     = []
+
+	Fnames.each{ |fname|
+		Fname2pids[fname].each{ |group, pid|
+			faa  = "#{Dir1}/#{fname}/#{group}/#{pid}/query.faa"
+
+			pref = File.dirname(faa) + "/hhblits"
+
+      out = []
+      out << "hhblits -cpu 1 -d #{Hhdb} -i #{faa} -oa3m #{pref}.a3m -o #{pref}.hhr -n #{Iter} >#{pref}.log 2>&1" unless File.exist?("#{pref}.hhr")
+      outs << out*" && "
+		}
+	}
+
+	WriteBatch.call(outs, jdir, t)
+	RunBatch.call(jdir, Qname, Nthreads, Mem, Wtime, Ncpus, Tdir)
+end
+desc "02-1.parse_result"
+task "02-1.parse_result", ["step"] do |t, args|
 	PrintStatus.call(args.step, NumStep, "START", t)
 	header   = %w|protein query_len query_num_iter query_num_seq query_num_seq_used template_acc template_name template_desc
 	probability e-value p-value score cols query_pos template_pos template_len rank|
@@ -311,9 +335,22 @@ task "01-6.parse_result", ["step"] do |t, args|
 
 			Group2pids[group].each{ |pid|
 				### parse iter/q_num_1 
-				a2m     = Dir["#{dgroup}/#{pid}/jack-*.a2m"][0]
-				iter    = File.basename(a2m)[/jack-(\d+)\.a2m/, 1] ## number of iteration for build queryHMM
-				q_num_1 = IO.read(a2m).split(/^>/)[1..-1].size  ## number of sequence included in queryHMM
+        iter    = "-"
+        q_num_1 = "-"
+
+        case Mode
+        when "hhsearch"
+          a2m     = Dir["#{dgroup}/#{pid}/jack-*.a2m"][0]
+          iter    = File.basename(a2m)[/jack-(\d+)\.a2m/, 1] ## number of iteration for build queryHMM
+          q_num_1 = IO.read(a2m).split(/^>/)[1..-1].size  ## number of sequence included in queryHMM
+        when "hhblits"
+          flog    = Dir["#{dgroup}/#{pid}/hhblits.log"][0]
+          IO.readlines(flog).each{ |l|
+            l = l.strip
+            iter    = $1 if l =~ / INFO: Iteration (\d+)$/     ## - 14:15:38.354 INFO: Iteration 3
+            q_num_1 = $1 if l =~ /^No_of_seqs    (\d+) out of/ ## No_of_seqs    1753 out of 3809
+          }
+        end
 
 				### store [pid, len, iter]
 				len  = pinfo[pid]
@@ -322,7 +359,7 @@ task "01-6.parse_result", ["step"] do |t, args|
 					out << [pid, len, iter, q_num_1]
 				end
 
-				fin  = "#{dgroup}/#{pid}/hhsearch.hhr"
+				fin  = "#{dgroup}/#{pid}/#{Mode}.hhr"
 				if File.exist?(fin)
 					ls = IO.readlines(fin)
 

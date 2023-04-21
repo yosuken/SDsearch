@@ -1,0 +1,20 @@
+-------------------------------------
+PRODIGAL v2.6.3 [February, 2016]         
+Univ of Tenn / Oak Ridge National Lab
+Doug Hyatt, Loren Hauser, et al.     
+-------------------------------------
+Request:  Single Genome, Phase:  Training
+Reading in the sequence(s) to train...
+
+Warning:  ideally Prodigal should be given at least 100000 bases for training.
+You may get better results with the -p meta option.
+
+36611 bp seq created, 31.59 pct GC
+Locating all potential starts and stops...910 nodes
+Looking for GC bias in different frames...frame bias scores: 2.06 0.63 0.32
+Building initial set of genes to train from...done!
+Creating coding model and scoring nodes...done!
+Examining upstream regions and training starts...done!
+-------------------------------------
+Request:  Single Genome, Phase:  Gene Finding
+Finding genes in sequence #1 (36611 bp)...done!
