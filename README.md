@@ -1,19 +1,15 @@
 
-# sensitive_domain_search - a helper tool for high sensitive HMM-HMM search against domain DBs (e.g. Pfam)
+# SDsearch - a helper tool for high sensitive HMM-HMM search against domain DBs (e.g. Pfam)
 
 [![license](https://img.shields.io/github/license/mashape/apistatus.svg)](/LICENSE)
 [![size](https://img.shields.io/github/size/webcaetano/craft/build/phaser-craft.min.js.svg)]()
 
-## old names of this repository
-* hhliner
-* pipeline_for_high_sensitive_domain_search
-
 ## usage 
 ```
-### sensitive_domain_search ver 0.2.0 (2023-04-20) ###
+### SDsearch ver 0.2.0 (2023-04-20) ###
 
 [description]
-sensitive_domain_search - a helper tool for high sensitive HMM-HMM search against domain DBs (e.g. Pfam) using either (a) HHblits or (b) HHsearch and JackHMMER
+SDsearch - a helper tool for high sensitive HMM-HMM search against domain DBs (e.g. Pfam) using either (a) HHblits or (b) HHsearch and JackHMMER
 Default is HHblits, changed from ver 0.2.0 (2023-04-20).
 
 [reference]
@@ -25,7 +21,7 @@ HHsearch  - doi:10.1093/bioinformatics/bti125
 JackHMMER - doi:10.1186/1471-2105-11-431
 
 [usage]
-$ sensitive_domain_search [options]
+$ SDsearch [options]
 
 [dependencies]
     - ruby (ver >=2.1)
@@ -42,7 +38,7 @@ $ sensitive_domain_search [options]
 [options]
   (general)
     -i, --in      [path]  (required) query protein fasta file. To use multiple files as input, this value could be (1) comma-separeted file paths or (2) path of input file list (one file in one line).
-                          If many proteins are included in a fasta file, adding "belongTo:" tag in comment lines to generate easy-to-understand output.  e.g. ">protein1 len:200 belongTo:contig1"
+                          If many proteins are included in a fasta file, adding "belongTo:" tag in comment lines to generate easy-to-understand output.  e.g. ">protein1 belongTo:genome1"
     -o, --out     [path]  (required) output directory. It should not exist.
     -H, --hhdb    [path]  (required) Pfam database for HHsearch available here: http://wwwuser.gwdg.de/~compbiol/data/hhsuite/databases/hhsuite_dbs/
     -m, --mode    [hhblits or hhsearch] search mode. (default: hhblits)
@@ -101,6 +97,10 @@ info/stats.txt                                 -- number of proteins in each fil
 17 rank               - rank of HMM-HMM alignment repored by hhsearch
 ```
 Columns 5 to 17 are derived from hhsearch output (.hhr file).
+
+## old names of this repository
+* hhliner
+* pipeline_for_high_sensitive_domain_search
 
 ## information
 Prototype of this package was used in environmental virus studies below.
